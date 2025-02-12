@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokémon Chat Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #fff;
+      background: url('https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/Background%20Site.png') no-repeat center center fixed;
+      background-size: cover;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .header {
+      width: 100%;
+      background: #fff000;
+      padding: 20px;
+      color: #2a75bb;
+      font-size: 24px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .logout-btn, .mochila-btn, .pokedex-btn {
+      background-color: #ff5252;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .logout-btn:hover, .mochila-btn:hover, .pokedex-btn:hover {
+      background-color: #e04848;
+    }
+
+    .reward-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      position: absolute;
+      left: 50%;
+      top: 2.5%;
+      transform: translateX(-50%);
+    }
+
+    .countdown {
+      font-size: 18px;
+      font-weight: bold;
+      color: #2a75bb;
+    }
+
+    .reward-btn {
+      display: none;
+      background-color: #4CAF50;
+      border: none;
+      border-radius: 5px;
+      color: #fff;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .reward-btn:hover {
+      background-color: #45a049;
+    }
+
+    /* Ajuste no layout */
+    #youtube-player {
+      width: 1120px;
+      height: 630px;
+    }
+
+    #youtube-chat {
+      width: 380px;
+      height: 630px;
+      background-color: #fff;
+      position: relative;
+    }
+
+    #local-chat {
+      width: 360px;
+      height: 610px;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 10px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      border-left: 5px solid #fff;
+      position: relative;
+    }
+
+    #local-chat .header {
+      text-align: center;
+      font-size: 20px;
+      margin-bottom: 10px;
+      color: #2a75bb;
+    }
+
+    #messages {
+    width: 93%;
+    height: 420px; /* Defina uma altura fixa */
+    overflow-y: auto; /* Ativa a barra de rolagem caso tenha muitas mensagens */
+    border: 1px solid #ccc;
+    padding: 10px;
+    background: #f9f9f9;
+    }
+
+    #message-input {
+      width: 88%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      background-color: #fff;
+      color: #000;
+      position: absolute;
+      bottom: 50px;
+    }
+
+    #send-button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      margin-top: 10px;
+      position: absolute;
+      bottom: 10px;
+    }
+
+    #send-button:hover {
+      background-color: #45a049;
+    }
+
+    .message {
+      color: #000;
+      font-size: 14px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+    }
+
+    .message-user {
+      color: #2a75bb;
+      font-weight: bold;
+    }
+
+    .message-time {
+      color: #7b7b7b;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+
+    /* Ajuste para telas 16:9 (PC) */
+.container {
+    display: flex;
+    flex-direction: row; /* Elementos lado a lado */
+    justify-content: space-between;
+    align-items: flex-start;
+    }
+
+/* Ajuste para telas 9:16 (celular) */
+@media (max-aspect-ratio: 9/16) {
+    .container {
+        flex-direction: column; /* Elementos um abaixo do outro */
+        align-items: center;
+    }
+
+    #youtube-player {
+        width: 90vw; /* Ajusta para ocupar quase toda a largura */
+        height: auto; /* Altura ajustável */
+        max-height: 40vh; /* Máximo de 40% da tela */
+    }
+
+    #youtube-chat, #local-chat {
+        width: 90vw; /* Largura ajustada */
+        height: auto; /* Altura dinâmica */
+        max-height: 30vh; /* Máximo de 30% da tela */
+    }
+
+    #messages {
+        height: 200px; /* Ajuste da área de mensagens */
+    }
+
+    #message-input {
+        width: 80%;
+        bottom: 70px;
+    }
+
+    #send-button {
+        width: 80%;
+        bottom: 20px;
+    }
+
+    .header {
+        flex-direction: column; /* Organiza os botões abaixo do título */
+        text-align: center;
+        padding: 10px;
+    }
+
+    .button-group {
+        flex-direction: column;
+        gap: 5px;
+    }
+}
+    
+  </style>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, addDoc, onSnapshot, orderBy, query, serverTimestamp, arrayUnion } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyB-CiPKkmusIxop1Ro5sazFq7Y5Y69r_Sg",
+        authDomain: "pokemon-chat-game.firebaseapp.com",
+        projectId: "pokemon-chat-game",
+        storageBucket: "pokemon-chat-game.appspot.com",
+        messagingSenderId: "534106103952",
+        appId: "1:534106103952:web:000300dffd0e2b4be77815",
+        measurementId: "G-TRZ2BM4P2W"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let userId = null;
+    let countdownTime = localStorage.getItem('countdownTime') ? parseInt(localStorage.getItem('countdownTime')) : 120; 
+
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            listenForMessages();
+            window.location.href = "index.html"; 
+        } else {
+            userId = user.uid;
+            startCountdown();
+        }
+    });
+
+    function logout() {
+        signOut(auth).then(() => {
+            window.location.href = "index.html"; 
+        }).catch((error) => {
+            console.error("Erro ao fazer logout:", error);
+        });
+    }
+
+    window.logout = logout;
+
+    function startCountdown() {
+        const countdownElement = document.getElementById('countdown');
+        const rewardButton = document.getElementById('reward-btn');
+
+        const interval = setInterval(() => {
+            let minutes = Math.floor(countdownTime / 60);
+            let seconds = countdownTime % 60;
+            countdownElement.textContent = `Recompensa em: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+            localStorage.setItem('countdownTime', countdownTime);
+
+            if (countdownTime <= 0) {
+                clearInterval(interval);
+                rewardButton.style.display = 'block';
+                countdownElement.textContent = 'Clique para resgatar sua recompensa!';
+            } else {
+                countdownTime--;
+            }
+        }, 1000);
+    }
+
+    async function claimReward() {
+        const rewardButton = document.getElementById('reward-btn');
+        const countdownElement = document.getElementById('countdown');
+
+        const rewards = [
+            { type: 'pokeball', chance: 50 },
+            { type: 'greatball', chance: 30 },
+            { type: 'ultraball', chance: 19 },
+            { type: 'masterball', chance: 1 }
+        ];
+
+        let random = Math.random() * 100;
+        let accumulatedChance = 0;
+        let chosenReward = 'pokeball';
+
+        for (let reward of rewards) {
+            accumulatedChance += reward.chance;
+            if (random < accumulatedChance) {
+                chosenReward = reward.type;
+                break;
+            }
+        }
+
+        countdownElement.textContent = `Você ganhou uma ${chosenReward}!`;
+        rewardButton.style.display = 'none';
+
+        if (userId) {
+            const userRef = doc(db, "jogadores", userId);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+                let userData = userSnap.data();
+                
+                if (!userData.pokebolas) {
+                    userData.pokebolas = {};
+                }
+
+                userData.pokebolas[chosenReward] = (userData.pokebolas[chosenReward] || 0) + 1;
+                await updateDoc(userRef, { pokebolas: userData.pokebolas });
+            }
+        }
+
+        countdownTime = 120;
+        localStorage.setItem('countdownTime', countdownTime);
+        startCountdown();
+    }
+
+    window.claimReward = claimReward;
+
+    function loadYouTubePlayer() {
+    const apiKey = 'AIzaSyDiXt8PE1bK8MjSKSKaqSnQ2MEtgdf2hKU';
+    const channelId = 'UC0f57eJUzR8UHXcrbwiAYWg';
+
+    fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&eventType=live&type=video&key=${apiKey}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);  // Adicione esse log para ver o que está retornando
+            const videoId = data.items[0]?.id?.videoId;
+            if (videoId) {
+                const playerElement = document.getElementById('youtube-player');
+                playerElement.innerHTML = 
+                    `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+
+                const chatElement = document.getElementById('youtube-chat');
+                chatElement.innerHTML = 
+                    `<iframe width="100%" height="100%" src="https://www.youtube.com/live_chat?v=${videoId}&embed_domain=${window.location.hostname}" frameborder="0"></iframe>`;
+            } else {
+                console.log("No active live stream found.");
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching live stream:', error);
+        });
+}
+
+    window.onload = loadYouTubePlayer;
+
+    // Chat local
+    async function sendMessage() {
+  const messageInput = document.getElementById("message-input");
+  const message = messageInput.value.trim();
+
+  if (message === "") return; // Evita mensagens vazias
+    const timestamp = new Date();
+  const user = auth.currentUser;
+  if (!user) {
+    console.error("Usuário não autenticado.");
+    return;
+  }
+
+  try {
+    // Referência ao documento do chat
+    const chatDocRef = doc(db, "chat", "messagesDoc");
+
+    // Cria um novo objeto de mensagem com a timestamp
+    const newMessage = {
+      user: user.displayName || "Desconhecido",
+      message: message,
+      timestamp: timestamp, // Adiciona timestamp como string ISO
+    };
+
+    // Obtém o documento de chat
+    const docSnap = await getDoc(chatDocRef);
+    let messages = [];
+
+    // Verifica se o documento existe. Se não, cria um novo
+    if (docSnap.exists()) {
+      messages = docSnap.data().messages || [];
+    } else {
+      // Se não existir, cria o documento com um array vazio
+      await setDoc(chatDocRef, { messages: [] });
+    }
+
+    // Adiciona a nova mensagem ao array de mensagens
+    messages.push(newMessage);
+
+    // Atualiza o documento com o novo array de mensagens
+    await updateDoc(chatDocRef, {
+      messages: messages
+    });
+
+    messageInput.value = ""; // Limpa o campo após enviar a mensagem
+  } catch (error) {
+    console.error("Erro ao enviar mensagem:", error);
+  }
+}
+
+    function listenForMessages() {
+  const chatContainer = document.getElementById("messages");
+
+  // Escuta as alterações no documento 'messagesDoc'
+  onSnapshot(doc(db, "chat", "messagesDoc"), (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const messages = data.messages || [];
+      chatContainer.innerHTML = ""; // Limpa mensagens antes de atualizar
+
+      messages.forEach((msg) => {
+        const messageElement = document.createElement("div");
+        messageElement.classList.add("message");
+
+        // Formatação do horário da mensagem
+        const time = msg.timestamp ? new Date(msg.timestamp.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--:--";
+
+        messageElement.innerHTML = `<span class="message-time">${time}</span> <span class="message-user">${msg.user}:</span> ${msg.message}`;
+        chatContainer.appendChild(messageElement);
+      });
+
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    }
+  });
+}
+
+    window.onload = function() {
+  listenForMessages(); // Adiciona esta linha para garantir que as mensagens apareçam
+  loadYouTubePlayer();
+};
+    window.sendMessage = sendMessage;
+  </script>
+</head>
+<body>
+  <div class="header">
+    <div>Pokémon Chat Game</div>
+    <div class="button-group">
+      <button class="mochila-btn" onclick="window.location.href='mochila.html'">Mochila</button>
+      <button class="pokedex-btn" onclick="window.location.href='pokedex.html'">Pokedex</button>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+  </div>
+  
+  <div class="reward-container">
+    <div class="countdown" id="countdown">Recompensa em: 1:00</div>
+    <button id="reward-btn" class="reward-btn" onclick="claimReward()">Resgatar Recompensa</button>
+  </div>
+
+  <div style="width: 100%; display: flex; justify-content: flex-start; align-items: flex-start;">
+    <div id="local-chat">
+      <div class="header">Poke Chat</div>
+      <div id="messages"></div>
+      <input id="message-input" type="text" placeholder="Digite sua mensagem..." onkeydown="if(event.key === 'Enter'){sendMessage()}">
+      <button id="send-button" onclick="sendMessage()">Enviar</button>
+    </div>
+    <div id="youtube-player"></div>
+    <div id="youtube-chat"></div>
+  </div>
+</body>
+</html>
