@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokédex</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #fff;
+            background: url('https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/Background%20Site.png') no-repeat center center fixed;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            width: 100%;
+            background: #fff000;
+            padding: 20px;
+            color: #2a75bb;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .filter-container, .sort-container {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .filter-container label, .sort-container label {
+            margin-right: 10px;
+            color: #000000;
+        }
+
+        .pokedex-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 20px;
+            justify-content: center;
+        }
+
+        .pokemon-card {
+            background: #303030;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            width: 200px;
+        }
+
+        .pokemon-card img {
+            width: 200px;
+            height: 200px;
+        }
+
+        .type-container {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .type-container img {
+            width: 30px;
+            height: 30px;
+        }
+
+        .loading {
+            color: #fff;
+            font-size: 18px;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-CiPKkmusIxop1Ro5sazFq7Y5Y69r_Sg",
+            authDomain: "pokemon-chat-game.firebaseapp.com",
+            projectId: "pokemon-chat-game",
+            storageBucket: "pokemon-chat-game.appspot.com",
+            messagingSenderId: "534106103952",
+            appId: "1:534106103952:web:000300dffd0e2b4be77815",
+            measurementId: "G-TRZ2BM4P2W"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userId = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = "index.html";
+            } else {
+                userId = user.uid;
+                await loadPokedex();
+            }
+        });
+
+        document.querySelector('.inicio-btn').addEventListener('mousedown', function(event) {
+            navigate(event, 'inicio.html');
+        });
+        document.querySelector('.mochila-btn').addEventListener('mousedown', function(event) {
+            navigate(event, 'mochila.html');
+        });
+        
+        function navigate(event, url) {
+            if (event.button === 1) { // Botão do meio do mouse
+                event.preventDefault(); // Impede o comportamento padrão (scroll)
+                window.open(url, '_blank'); // Abre em nova guia
+            } else if (event.button === 0) { // Botão esquerdo
+                window.location.href = url; // Abre na mesma guia
+            }
+        }
+
+        function logout() {
+        signOut(auth).then(() => {
+            window.location.href = "index.html"; 
+        }).catch((error) => {
+            console.error("Erro ao fazer logout:", error);
+        });
+        }
+
+        window.logout = logout;
+
+        const tiposURLs = {
+            normal: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/normal.png",
+            psiquico: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/psiquico.png",
+            lutador: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/lutador.png",
+            venenoso: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/venenoso.png",
+            eletrico: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/eletrico.png",
+            fogo: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/fogo.png",
+            planta: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/planta.png",
+            agua: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/agua.png",
+            aco: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/aço.png",
+            voador: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/voador.png",
+            dragao: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/dragao.png",
+            inseto: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/inseto.png",
+            fada: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/fada.png",
+            sombrio: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/sombrio.png",
+            fantasma: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/fantasma.png",
+            terrestre: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/terrestre.png",
+            pedra: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/pedra.png",
+            gelo: "https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/gelo.png"
+        };
+
+        // Função para remover acentos
+        function removerAcentos(str) {
+            return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        }
+
+        // Função para fazer as substituições solicitadas no nome da imagem
+    function corrigirNomeImagem(nome) {
+        return nome
+            .replace("♀", "f")   // Substitui "♀" por "f"
+            .replace("♂", "m")   // Substitui "♂" por "m"
+            .replace(".", "")    // Remove o ponto
+            .replace(" ", "")    // Remove o espaço
+            .replace("'", "");   // Remove aspas simples
+        }
+
+        async function loadPokedex() {
+            if (!userId) return;
+
+            const userRef = doc(db, "jogadores", userId);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                let pokemonsCapturados = userData.pokemonsCapturados || {};
+                const pokedexContainer = document.getElementById('pokedex-container');
+                const filterSelect = document.getElementById('filter');
+
+                // Função de ordenação
+                function sortPokemons(criteria) {
+                    let sortedPokemons = Object.entries(pokemonsCapturados);
+
+                    switch (criteria) {
+                        case 'nome':
+                            sortedPokemons.sort(([nomeA], [nomeB]) => nomeA.localeCompare(nomeB));
+                            break;
+                        case 'iv':
+                            sortedPokemons.sort(([nomeA, dadosA], [nomeB, dadosB]) => dadosB.IV - dadosA.IV);
+                            break;
+                        default:
+                            break;
+                    }
+                    renderPokemons(sortedPokemons);
+                }
+
+                // Função para obter os tipos selecionados
+                function getSelectedTypes() {
+                    const selectedTypes = [];
+                    const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+                    checkboxes.forEach(checkbox => {
+                        selectedTypes.push(checkbox.value);
+                    });
+                    return selectedTypes;
+                }
+
+                // Exibir mensagem de carregamento enquanto os dados são processados
+                if (Object.keys(pokemonsCapturados).length === 0) {
+                    pokedexContainer.innerHTML = "<p class='loading'>Carregando Pokémons...</p>";
+                }
+
+                // Função para renderizar os Pokémon
+                function renderPokemons(sortedPokemons) {
+                    pokedexContainer.innerHTML = "";
+                
+                    const selectedTypes = getSelectedTypes();
+                
+                    sortedPokemons.forEach(([nome, dados]) => {
+                        const nomeTipo1 = dados.tipo1 ? dados.tipo1.nome : '';
+                        const nomeTipo2 = dados.tipo2 ? dados.tipo2.nome : '';
+                
+                        const pokemonTypes = [nomeTipo1, nomeTipo2].filter(tipo => tipo !== '');
+                
+                        // Se houver filtros selecionados, o Pokémon só aparecerá se possuir exatamente todos os tipos selecionados
+                        if (selectedTypes.length > 0 && !selectedTypes.every(tipo => pokemonTypes.includes(tipo))) {
+                            return;
+                        }
+                
+                        const pokemonCard = document.createElement('div');
+                        pokemonCard.classList.add('pokemon-card');
+                
+                        const pokemonImagePath = dados.shiny ? `images/${corrigirNomeImagem(nome.toLowerCase())}_shiny.gif` : `images/${corrigirNomeImagem(nome.toLowerCase())}_normal.gif`;
+                        const nomeComShiny = dados.shiny ? `${nome} ✨` : nome;
+                
+                        const tipo1ImagePath = nomeTipo1 ? tiposURLs[removerAcentos(nomeTipo1.toLowerCase())] : '';
+                        const tipo2ImagePath = nomeTipo2 ? tiposURLs[removerAcentos(nomeTipo2.toLowerCase())] : '';
+                
+                        pokemonCard.innerHTML = ` 
+                            <img src="${pokemonImagePath}" alt="${nome}">
+                            <h3>${nomeComShiny}</h3>
+                            <p>IV: ${dados.IV}%</p>
+                            <div class="type-container">
+                                <img src="${tipo1ImagePath}" alt="${nomeTipo1}">
+                                ${tipo2ImagePath ? `<img src="${tipo2ImagePath}" alt="${nomeTipo2}">` : ''}
+                            </div>
+                        `;
+                
+                        pokedexContainer.appendChild(pokemonCard);
+                    });
+                }
+
+                // Filtro por tipo (checkboxes)
+                const types = [
+                    "Aço", "Água", "Dragão", "Elétrico", "Fada", "Fantasma", "Fogo", "Gelo", 
+                    "Inseto", "Lutador", "Normal", "Pedra", "Planta", "Psíquico", "Sombrio", "Terrestre", 
+                    "Venenoso", "Voador"
+                ];
+
+                const filterContainer = document.querySelector('.filter-container');
+                types.forEach(tipo => {
+                    const label = document.createElement('label');
+                    label.innerHTML = tipo;
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.value = tipo;
+                    checkbox.addEventListener('change', () => sortPokemons('tipo'));
+                    label.appendChild(checkbox);
+                    filterContainer.appendChild(label);
+                });
+
+                // Ordenação
+                const sortSelect = document.getElementById('sort');
+                sortSelect.addEventListener('change', (e) => {
+                    const selectedOption = e.target.value;
+                    sortPokemons(selectedOption);
+                });
+
+                const sortedPokemons = Object.entries(pokemonsCapturados).sort(([nomeA], [nomeB]) => nomeA.localeCompare(nomeB));
+                renderPokemons(sortedPokemons);    // Renderiza os pokémons iniciais
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="header">
+        <div>Minha Pokédex</div>
+        <div class="buttons">
+            <button class="btn inicio-btn">Início</button> 
+            <button class="btn mochila-btn">Mochila</button>
+            <button class="btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="filter-container">
+        <label>Filtrar por Tipo:</label>
+    </div>
+
+    <div class="sort-container">
+        <label>Ordenar por:</label>
+        <select id="sort">
+            <option value="nome">Nome (A - Z)</option>
+            <option value="iv">IV (Maior - Menor)</option>
+        </select>
+    </div>
+
+    <div class="pokedex-container" id="pokedex-container"></div>
+</body>
+</html>

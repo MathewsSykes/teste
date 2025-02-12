@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mochila - Pokémon Chat Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: url('https://raw.githubusercontent.com/YataiBr/images/refs/heads/main/Background%20Site.png') no-repeat center center fixed;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .header {
+            width: 100%;
+            background: #fff000;
+            padding: 20px;
+            color: #2a75bb;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+        .btn {
+            background-color: #2a75bb;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            padding: 10px 15px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #1f5a91;
+        }
+        .mochila-container {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            color: #000000;
+        }
+        .pokebola-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 16px;
+        }
+        .pokebola-item img {
+            width: 100px;
+            height: 100px;
+        }
+    </style>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB-CiPKkmusIxop1Ro5sazFq7Y5Y69r_Sg",
+            authDomain: "pokemon-chat-game.firebaseapp.com",
+            projectId: "pokemon-chat-game",
+            storageBucket: "pokemon-chat-game.appspot.com",
+            messagingSenderId: "534106103952",
+            appId: "1:534106103952:web:000300dffd0e2b4be77815",
+            measurementId: "G-TRZ2BM4P2W"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let userId = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = "index.html";
+            } else {
+                userId = user.uid;
+                loadMochila();
+            }
+        });
+
+        document.querySelector('.inicio-btn').addEventListener('mousedown', function(event) {
+            navigate(event, 'inicio.html');
+        });
+        document.querySelector('.pokedex-btn').addEventListener('mousedown', function(event) {
+            navigate(event, 'pokedex.html');
+        });
+        
+        function navigate(event, url) {
+            if (event.button === 1) { // Botão do meio do mouse
+                event.preventDefault(); // Impede o comportamento padrão (scroll)
+                window.open(url, '_blank'); // Abre em nova guia
+            } else if (event.button === 0) { // Botão esquerdo
+                window.location.href = url; // Abre na mesma guia
+            }
+        }
+
+        function logout() {
+        signOut(auth).then(() => {
+            window.location.href = "index.html"; 
+        }).catch((error) => {
+            console.error("Erro ao fazer logout:", error);
+        });
+        }
+
+        window.logout = logout;
+
+        async function loadMochila() {
+            if (!userId) return;
+            const userRef = doc(db, "jogadores", userId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                const pokebolas = userData.pokebolas || {};
+                document.getElementById("mochila").innerHTML = `
+                    ${createPokebolaItem("Pokeball", "https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExZGpzdWt2bTJsMGduMzc3dGtjdm5xa3JiamVleWJrejN3b3V4cjF4bSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/s7TgELFDKQRIL8P01x/giphy.gif", pokebolas.pokeball || 0)}
+                    ${createPokebolaItem("Greatball", "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnpja2wwMDR1c2t4MzZpdDIwZWxhb2JhbjhxYzNxcXZubTB0d2R4eiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/TUiCuem2BNYTab0Xbi/giphy.gif", pokebolas.greatball || 0)}
+                    ${createPokebolaItem("Ultraball", "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMnlsdXRjMWhtOWpydXYxMmhzcWh3aXY0Z2xob2d6Mzg2dnNjcHZnZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/t5G8KlPBgdNwhePd8O/giphy.gif", pokebolas.ultraball || 0)}
+                    ${createPokebolaItem("Masterball", "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExZDliMXNudWU1NGFmazNraThveTU3MXJoY3gxOHdzNjJkcGI3ampzeCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/SMKYFo6QEWMVkfRcii/giphy.gif", pokebolas.masterball || 0)}
+
+                `;
+            }
+        }
+
+        function createPokebolaItem(name, imageUrl, quantity) {
+            return `
+                <div class="pokebola-item">
+                    <img src="${imageUrl}" alt="${name}">
+                    <span>${name}: ${quantity}</span>
+                </div>
+            `;
+        }
+    </script>
+</head>
+<body>
+    <div class="header">
+        Minha Mochila
+        <div class="button-group">
+            <button class="btn inicio-btn">Início</button>
+            <button class="btn pokedex-btn">Mochila</button>
+            <button class="btn logout-btn" onclick="logout()">Logout</button>
+        </div>
+    </div>
+    <div class="mochila-container" id="mochila">
+        Carregando...
+    </div>
+</body>
+</html>
