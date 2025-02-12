@@ -85,7 +85,7 @@
 
                 messageElement.className = 'message success';
                 messageElement.innerText = `Bem-vindo, ${user.displayName}!`;
-                
+                setTimeout(() => window.location.href = "inicio.html", 1500);
             } catch (error) {
                 console.error("Erro ao fazer login com Google:", error);
                 messageElement.className = 'message error';
